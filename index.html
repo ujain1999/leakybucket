@@ -1,6 +1,220 @@
-<html>
-  <body>
-    Test
-  </body>
-</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>leakybucket</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #fff;
+  color: #4a4a4a;
+  font-family: 'Courier New', Courier, monospace;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.main {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 880px;
+  padding: 0 20px;
+}
+.side {
+  flex: 1;
+  min-width: 0;
+}
+.side.left { text-align: right; padding-right: 24px; }
+.side.right { text-align: left; padding-left: 24px; }
+.text-block {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #666;
+  max-width: 200px;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+.text-block.visible { opacity: 1; }
+.text-block.hidden { display: none; }
+.side.left .text-block { margin-left: auto; }
+.side.right .text-block { margin-right: auto; }
 
+svg {
+  display: block;
+  width: 340px;
+  height: 340px;
+  flex-shrink: 0;
+}
+#water {
+  transition: y 0.5s ease, height 0.5s ease;
+}
+.button-area {
+  margin-top: 24px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.tap-btn, .buy-btn {
+  background: none;
+  border: 1.5px solid #1a1a1a;
+  color: #555;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 13px;
+  padding: 10px 28px;
+  cursor: pointer;
+  letter-spacing: 1.5px;
+  transition: opacity 0.4s, background 0.25s, color 0.25s;
+}
+.tap-btn:hover, .buy-btn:hover {
+  background: #1a1a1a;
+  color: #fff;
+}
+.buy-btn {
+  display: none;
+  opacity: 0;
+}
+</style>
+</head>
+<body>
+<div class="main">
+  <div class="side left">
+    <div class="text-block" id="t1">We believe in what's essential.</div>
+    <div class="text-block hidden" id="t3">But it teaches us what matters.</div>
+    <div class="text-block hidden" id="t5">What remains is enough.</div>
+  </div>
+  <svg viewBox="0 0 400 400">
+    <defs>
+      <clipPath id="bucketClip">
+        <polygon points="155,80 172,310 228,310 245,80"/>
+      </clipPath>
+    </defs>
+    <!-- bucket handle -->
+    <path d="M 155 80 Q 200 40 245 80" fill="none" stroke="#1a1a1a" stroke-width="1.5"/>
+    <!-- bucket walls -->
+    <line x1="155" y1="80" x2="172" y2="310" stroke="#1a1a1a" stroke-width="2"/>
+    <line x1="245" y1="80" x2="228" y2="310" stroke="#1a1a1a" stroke-width="2"/>
+    <line x1="172" y1="310" x2="228" y2="310" stroke="#1a1a1a" stroke-width="2"/>
+    <!-- water -->
+    <rect id="water" x="150" y="310" width="100" height="0" fill="#d4d4d4" clip-path="url(#bucketClip)"/>
+    <!-- hole -->
+    <circle cx="237" cy="195" r="6" fill="#fff" stroke="#1a1a1a" stroke-width="1.5"/>
+    <!-- droplets -->
+    <circle id="d1" cx="249" cy="201" r="3.5" fill="#d4d4d4" stroke="#1a1a1a" stroke-width="1" opacity="0"/>
+    <circle id="d2" cx="259" cy="213" r="3.5" fill="#d4d4d4" stroke="#1a1a1a" stroke-width="1" opacity="0"/>
+    <!-- tap -->
+    <g id="tapGroup">
+      <line x1="95" y1="310" x2="95" y2="60" stroke="#1a1a1a" stroke-width="2.5"/>
+      <line x1="95" y1="60" x2="145" y2="60" stroke="#1a1a1a" stroke-width="2.5"/>
+      <g id="handle" style="transform-origin: 95px 60px; transition: transform 0.18s;">
+        <line x1="95" y1="60" x2="95" y2="38" stroke="#1a1a1a" stroke-width="2.5"/>
+        <line x1="83" y1="45" x2="107" y2="45" stroke="#1a1a1a" stroke-width="2"/>
+      </g>
+    </g>
+    <!-- water stream -->
+    <line id="waterStream" x1="145" y1="60" x2="175" y2="82" stroke="#d4d4d4" stroke-width="2" stroke-dasharray="3 3" opacity="0"/>
+  </svg>
+  <div class="side right">
+    <div class="text-block hidden" id="t2">A bucket with a hole holds nothing.</div>
+    <div class="text-block hidden" id="t4">Let go of what you cannot keep.</div>
+  </div>
+</div>
+<div class="button-area">
+  <button class="tap-btn" id="tapBtn">↻ tap</button>
+  <button class="buy-btn" id="buyBtn">Buy Now</button>
+</div>
+<script>
+let state = 0;
+let busy = false;
+const water = document.getElementById('water');
+const d1 = document.getElementById('d1');
+const d2 = document.getElementById('d2');
+const handle = document.getElementById('handle');
+const stream = document.getElementById('waterStream');
+const tapBtn = document.getElementById('tapBtn');
+const buyBtn = document.getElementById('buyBtn');
+const texts = {
+  1: document.getElementById('t1'),
+  2: document.getElementById('t2'),
+  3: document.getElementById('t3'),
+  4: document.getElementById('t4'),
+  5: document.getElementById('t5'),
+};
+const levels = [
+  { y: 310, h: 0 },
+  { y: 285, h: 25 },
+  { y: 240, h: 70 },
+  { y: 195, h: 115 },
+];
+
+function hideAllText() {
+  Object.values(texts).forEach(el => {
+    el.classList.remove('visible');
+    el.classList.add('hidden');
+  });
+}
+
+function showText(n) {
+  hideAllText();
+  const el = texts[n];
+  el.classList.remove('hidden');
+  void el.offsetWidth;
+  el.classList.add('visible');
+}
+
+function triggerTap() {
+  handle.style.transform = 'rotate(-20deg)';
+  setTimeout(() => { handle.style.transform = 'rotate(0deg)'; }, 180);
+}
+
+function triggerStream() {
+  stream.setAttribute('opacity', '0.5');
+  setTimeout(() => { stream.setAttribute('opacity', '0'); }, 280);
+}
+
+function setWater(level) {
+  const l = levels[level];
+  water.setAttribute('y', l.y);
+  water.setAttribute('height', l.h);
+}
+
+function showDroplet(n) {
+  (n === 1 ? d1 : d2).setAttribute('opacity', '1');
+}
+
+tapBtn.addEventListener('click', () => {
+  if (busy) return;
+  busy = true;
+  triggerTap();
+  triggerStream();
+  if (state < 3) {
+    state++;
+    setWater(state);
+    showText(state);
+  } else if (state < 5) {
+    state++;
+    showDroplet(state - 3);
+    showText(state);
+  } else if (state === 5) {
+    state = 6;
+    tapBtn.style.opacity = '0';
+    setTimeout(() => {
+      tapBtn.style.display = 'none';
+      buyBtn.style.display = 'block';
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          buyBtn.style.opacity = '1';
+        });
+      });
+    }, 400);
+  }
+  setTimeout(() => { busy = false; }, 600);
+});
+</script>
+</body>
+</html>
