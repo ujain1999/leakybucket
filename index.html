@@ -79,6 +79,17 @@ svg {
   display: none;
   opacity: 0;
 }
+.title-block {
+  font-size: 11px;
+  color: #bbb;
+  letter-spacing: 4px;
+  margin-bottom: 32px;
+  text-align: center;
+  transition: opacity 0.5s ease;
+}
+.title-block.hidden {
+  display: none;
+}
 .scene {
   display: contents;
 }
@@ -195,10 +206,11 @@ svg {
 </style>
 </head>
 <body>
-<div class="main">
+  <div class="title-block hidden" id="titleBlock">BUCKET WITH A HOLE</div>
+  <div class="main">
   <div class="side left">
-    <div class="text-block" id="t1">We believe in what's essential.</div>
-    <div class="text-block hidden" id="t3">But it teaches us what matters.</div>
+    <div class="text-block" id="t1">We surround ourselves with more, yet feel emptier than ever. Consumerism promised fulfillment but delivered noise.</div>
+    <div class="text-block hidden" id="t3">Breathe. Let go. Flow.</div>
     <div class="text-block hidden" id="t5">What remains is enough.</div>
   </div>
   <div class="scene" id="scene">
@@ -231,8 +243,8 @@ svg {
   </svg>
   </div>
   <div class="side right">
-    <div class="text-block hidden" id="t2">A bucket with a hole holds nothing.</div>
-    <div class="text-block hidden" id="t4">Let go of what you cannot keep.</div>
+    <div class="text-block hidden" id="t2">Everyone could use a little less. Less stuff, less noise, less wanting. In the empty, we find space.</div>
+    <div class="text-block hidden" id="t4">In Zen, a cup must be empty to be filled. To hold anything new, we must first let everything go.</div>
   </div>
   <div class="checkout-panel" id="checkoutPanel">
     <div class="checkout-form">
@@ -340,6 +352,8 @@ tapBtn.addEventListener('click', () => {
     showText(state);
   } else if (state === 5) {
     state = 6;
+    hideAllText();
+    document.getElementById('titleBlock').classList.remove('hidden');
     tapBtn.style.opacity = '0';
     setTimeout(() => {
       tapBtn.style.display = 'none';
@@ -357,6 +371,7 @@ tapBtn.addEventListener('click', () => {
 buyBtn.addEventListener('click', () => {
   document.querySelector('.main').classList.add('checkout-mode');
   document.getElementById('checkoutPanel').classList.add('visible');
+  document.getElementById('titleBlock').classList.add('hidden');
   document.querySelector('.button-area').style.display = 'none';
 });
 </script>
